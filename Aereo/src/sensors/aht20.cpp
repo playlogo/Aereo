@@ -16,8 +16,13 @@ int humidity;
 Point Sensor_AHT20("aht20");
 Point Sensor_ENS160("ens160");
 
-void setupAHT20()
+bool enabled_aht20 = false;
+bool enabled_ens160 = false;
+
+void setupAHT20AndENS160()
 {
+    // AHT20
+    Wire.setPins(9, 10);
     if (!aht.begin())
     {
         Serial.println("AHT20 sensor not found!");
@@ -25,11 +30,9 @@ void setupAHT20()
     else
     {
         Serial.println("AHT20 sensor found!");
+        enabled_aht20 = true;
     }
-}
 
-void setupENS160()
-{
     // ENS160
     ens160.begin();
 
@@ -43,6 +46,7 @@ void setupENS160()
         ens160.setMode(ENS160_OPMODE_STD);
 
         Serial.print("ENS160 Sensor initialized");
+        enabled_ens160 = true;
     }
     else
     {
@@ -54,16 +58,20 @@ void loopAHT20(void *parameter)
 {
     while (1)
     {
-        if (xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
+        if (enabled_aht20 && xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
         {
             sensors_event_t humidity1, temp;
             aht.getEvent(&humidity1, &temp);
-            tempC = (temp.temperature);
-            humidity = (humidity1.relative_humidity);
+
+            float org_temp = temp.temperature;
+            float org_humidity = humidity1.relative_humidity;
+
+            tempC = (org_temp);
+            humidity = (org_humidity);
 
             Sensor_AHT20.clearFields();
-            Sensor_AHT20.addField("temperature", tempC);
-            Sensor_AHT20.addField("humidity", humidity);
+            Sensor_AHT20.addField("temperature", org_temp);
+            Sensor_AHT20.addField("humidity", org_humidity);
 
             // If no Wifi signal, try to reconnect it
             if (wifiMulti.run() != WL_CONNECTED)
@@ -71,13 +79,19 @@ void loopAHT20(void *parameter)
                 Serial.println("Wifi connection lost");
             }
 
-            client.writePoint(Sensor_AHT20);
-
-            Serial.println("AHT20 Data sent to InfluxDB");
+            if (!client.writePoint(Sensor_AHT20))
+            {
+                Serial.print("InfluxDB write failed: ");
+                Serial.println(client.getLastErrorMessage());
+            }
+            else
+            {
+                Serial.println("AHT20 Data sent to InfluxDB");
+            }
             xSemaphoreGive(access_mutex);
         }
 
-        delay(1265);
+        delay(987);
     }
 }
 
@@ -85,7 +99,7 @@ void loopENS160(void *parameter)
 {
     while (1)
     {
-        if (xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
+        if (enabled_ens160 && xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
         {
             if (ens160.available())
             {
@@ -109,9 +123,10 @@ void loopENS160(void *parameter)
 
                 Serial.println("ENS160 Data sent to InfluxDB");
             }
+
             xSemaphoreGive(access_mutex);
         }
 
-        delay(878);
+        delay(1122);
     }
 }

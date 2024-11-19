@@ -18,8 +18,7 @@ void setup()
 
     // Sensors
     setupPMS5003();
-    setupAHT20();
-    setupENS160();
+    setupAHT20AndENS160();
     setupS8();
 
     // FreeRTOS
