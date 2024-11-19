@@ -12,7 +12,7 @@ InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKE
 
 // PMS5003
 #include <HardwareSerial.h>
-HardwareSerial pmsSerial(1);
+HardwareSerial pmsSerial(0);
 
 struct pms5003data
 {
@@ -45,6 +45,16 @@ ScioSense_ENS160 ens160(ENS160_I2CADDR_1); // 0x53..ENS160+AHT21
 
 Point Sensor_ENS160("ens160");
 
+// Senseair S8
+#include "s8_uart.h"
+
+HardwareSerial S8_serial(1);
+
+S8_UART *sensor_S8;
+S8_sensor sensor;
+
+Point Sensor_S8("s8");
+
 // Setup
 SemaphoreHandle_t access_mutex = NULL;
 
@@ -52,6 +62,7 @@ bool readPMSdata(Stream *s);
 
 void readPMS5003(void *parameter);
 void readAHT20(void *parameter);
+void readS8(void *parameter);
 void readENS160(void *parameter);
 
 void setup()
@@ -107,7 +118,24 @@ void setup()
         Serial.println("Could not find AHT20 sensor!");
     }
 
+    // S8
+    S8_serial.begin(S8_BAUDRATE, SERIAL_8N1, 4, 5);
+    sensor_S8 = new S8_UART(S8_serial);
+
+    sensor_S8->get_firmware_version(sensor.firm_version);
+    int len = strlen(sensor.firm_version);
+    if (len == 0)
+    {
+        Serial.println("SenseAir S8 CO2 sensor not found!");
+    }
+    else
+    {
+        Sensor_S8.addTag("firmware_version", String(sensor_S8->get_sensor_ID()));
+        Sensor_S8.addTag("sensor_id", String(sensor.sensor_id, HEX));
+    }
+
     // FreeRTOS
+    xTaskCreate(readS8, "readS8", 10000, NULL, 1, NULL);
     xTaskCreate(readPMS5003, "readPMS5003", 10000, NULL, 1, NULL);
     xTaskCreate(readAHT20, "readAHT20", 10000, NULL, 1, NULL);
     xTaskCreate(readENS160, "readENS160", 10000, NULL, 1, NULL);
@@ -115,6 +143,34 @@ void setup()
 
 void loop()
 {
+}
+
+void readS8(void *parameter)
+{
+    while (1)
+    {
+        if (xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
+        {
+            Sensor_S8.clearFields();
+
+            sensor.co2 = sensor_S8->get_co2();
+            Sensor_S8.addField("co2", sensor.co2);
+
+            // If no Wifi signal, try to reconnect it
+            if (wifiMulti.run() != WL_CONNECTED)
+            {
+                Serial.println("Wifi connection lost");
+            }
+
+            client.writePoint(Sensor_S8);
+
+            Serial.println("S8 Data sent to InfluxDB");
+
+            xSemaphoreGive(access_mutex);
+        }
+
+        delay(10000);
+    }
 }
 
 void readPMS5003(void *parameter)
