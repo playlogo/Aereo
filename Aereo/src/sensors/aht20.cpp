@@ -16,21 +16,19 @@ int humidity;
 Point Sensor_AHT20("aht20");
 Point Sensor_ENS160("ens160");
 
-bool enabled_aht20 = false;
-bool enabled_ens160 = false;
-
-void setupAHT20AndENS160()
+bool setupAHT20AndENS160()
 {
-    // AHT20
-    Wire.setPins(9, 10);
+    // AHT20Swtich
+    Wire.setPins(9, 10); // Switch I2C pins
+
     if (!aht.begin())
     {
         Serial.println("AHT20 sensor not found!");
+        return false;
     }
     else
     {
         Serial.println("AHT20 sensor found!");
-        enabled_aht20 = true;
     }
 
     // ENS160
@@ -46,19 +44,21 @@ void setupAHT20AndENS160()
         ens160.setMode(ENS160_OPMODE_STD);
 
         Serial.print("ENS160 Sensor initialized");
-        enabled_ens160 = true;
     }
     else
     {
         Serial.println("ENS160 sensor not found!");
+        return false;
     }
+
+    return true;
 }
 
 void loopAHT20(void *parameter)
 {
     while (1)
     {
-        if (enabled_aht20 && xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
+        if (xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
         {
             sensors_event_t humidity1, temp;
             aht.getEvent(&humidity1, &temp);
@@ -99,7 +99,7 @@ void loopENS160(void *parameter)
 {
     while (1)
     {
-        if (enabled_ens160 && xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
+        if (xSemaphoreTake(access_mutex, portMAX_DELAY) == pdTRUE)
         {
             if (ens160.available())
             {

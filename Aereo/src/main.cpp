@@ -17,15 +17,26 @@ void setup()
     influxDBSetup();
 
     // Sensors
-    setupPMS5003();
-    setupAHT20AndENS160();
-    setupS8();
+    bool enable_PMS5003 = setupPMS5003();
+    bool enable_AHT20AndENS160 = setupAHT20AndENS160();
+    bool enable_S8 = setupS8();
 
     // FreeRTOS
-    xTaskCreate(loopS8, "loopS8", 10000, NULL, 1, NULL);
-    xTaskCreate(loopPMS5003, "loopPMS5003", 10000, NULL, 1, NULL);
-    xTaskCreate(loopAHT20, "loopAHT20", 10000, NULL, 1, NULL);
-    xTaskCreate(loopENS160, "loopENS160", 10000, NULL, 1, NULL);
+    if (enable_PMS5003)
+    {
+        xTaskCreate(loopPMS5003, "loopPMS5003", 10000, NULL, 1, NULL);
+    }
+
+    if (enable_AHT20AndENS160)
+    {
+        xTaskCreate(loopAHT20, "loopAHT20", 10000, NULL, 1, NULL);
+        xTaskCreate(loopENS160, "loopENS160", 10000, NULL, 1, NULL);
+    }
+
+    if (enable_S8)
+    {
+        xTaskCreate(loopS8, "loopS8", 10000, NULL, 1, NULL);
+    }
 }
 
 void loop()

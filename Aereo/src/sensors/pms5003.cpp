@@ -11,10 +11,12 @@ struct pms5003data data;
 
 Point Sensor_PMS5003("pms5003");
 
-void setupPMS5003()
+bool setupPMS5003()
 {
     pmsSerial.begin(9600, SERIAL_8N1, 2, 3);
     Serial.println("Serial connection with PMS5003 started");
+
+    return true;
 }
 
 bool readPMSdata(Stream *s)

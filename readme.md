@@ -1,3 +1,11 @@
+# Aereo - Simple air quality logger
+
+Sensors
+
+- Temp + TVOC: AHT20 + ENS160 Combo
+- PM2.5: PMS5003
+- CO2: Senseair S8
+
 ## Prototype
 
 - Temp + TVOC sensor: <https://www.instructables.com/ENS160-AHT21-Sensor-for-Arduino/>

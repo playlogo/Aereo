@@ -13,7 +13,7 @@ S8_sensor sensor;
 HardwareSerial S8_serial(1);
 Point Sensor_S8("s8");
 
-void setupS8()
+bool setupS8()
 {
     S8_serial.begin(S8_BAUDRATE, SERIAL_8N1, 4, 5);
     sensor_S8 = new S8_UART(S8_serial);
@@ -23,6 +23,7 @@ void setupS8()
     if (len == 0)
     {
         Serial.println("SenseAir S8 CO2 sensor not found!");
+        return false;
     }
     else
     {
@@ -31,6 +32,7 @@ void setupS8()
     }
 
     Serial.println("SenseAir S8 CO2 sensor initialized");
+    return true;
 }
 
 void loopS8(void *parameter)

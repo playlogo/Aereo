@@ -13,7 +13,7 @@ struct pms5003data
     uint16_t checksum;
 };
 
-void setupPMS5003();
+bool setupPMS5003();
 
 bool readPMSdata(Stream *s);
 void loopPMS5003(void *parameter);
