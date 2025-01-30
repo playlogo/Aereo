@@ -8,10 +8,15 @@
 // Utils
 #include "utils/influxdb.h"
 
+// Neopixel
+#include "utils/neopixel.h"
+
 // Setup
 void setup()
 {
     Serial.begin(115200);
+
+    neopixelSetup();
 
     wifiConnect();
     influxDBSetup();
@@ -37,6 +42,8 @@ void setup()
     {
         xTaskCreate(loopS8, "loopS8", 10000, NULL, 1, NULL);
     }
+
+    setColor(enable_PMS5003 ? 0 : 40, enable_AHT20AndENS160 ? 0 : 40, enable_S8 ? 0 : 40);
 }
 
 void loop()

@@ -1,5 +1,7 @@
 # Aereo - Simple air quality logger
 
+# SECRETS
+
 Sensors
 
 - Temp + TVOC: AHT20 + ENS160 Combo
