@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+    grafana:
+        image: grafana/grafana:latest
+        depends_on:
+            - influxdb
+        container_name: grafana
+        restart: unless-stopped
+        user: "1000"
+        ports:
+            - "3000:3000"
+        volumes:
+            - ./grafana:/var/lib/grafana:rw
+        environment:
+            GF_INSTALL_PLUGINS: "grafana-mqtt-datasource"
+
+    influxdb:
+        image: influxdb:latest
+        restart: unless-stopped
+        env_file:
+            - .env
+        volumes:
+            - ./influxdb:/var/lib/influxdb2:rw
+        ports:
+            - "8086:8086"
